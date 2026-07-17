@@ -1,0 +1,14 @@
+{
+  // terabyte.tools — static site served via Workers Static Assets
+  "name": "terabyte-tools",
+  "compatibility_date": "2026-07-01",
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "404-page"
+  },
+  // Custom domain: the zone terabyte.tools must already be on this Cloudflare account
+  "routes": [
+    { "pattern": "terabyte.tools", "custom_domain": true },
+    { "pattern": "www.terabyte.tools", "custom_domain": true }
+  ]
+}

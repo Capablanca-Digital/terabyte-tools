@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>terabyte.tools. Calculators for people who run infrastructure</title>
+<meta name="description" content="Free, no-nonsense calculators for sysadmins and infrastructure engineers: backup retention sizing, subnet planning and more. Everything runs in your browser.">
+<link rel="canonical" href="https://terabyte.tools/">
+<meta property="og:title" content="terabyte.tools. Infrastructure calculators">
+<meta property="og:description" content="Backup sizing, subnetting and more. No fluff, no signup, runs in your browser.">
+<meta property="og:url" content="https://terabyte.tools/">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://terabyte.tools/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#10161D; --panel:#18212B; --line:#2C3947;
+  --text:#DCE4EE; --muted:#8A99AB; --amber:#FFB454; --green:#59D68C; --blue:#7FB3E3;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Inter',system-ui,sans-serif;
+  --disp:'Space Grotesk',var(--sans);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--blue)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand b{font-family:var(--disp);font-weight:700;font-size:17px}
+.brand b span{color:var(--amber)}
+.nav .tag{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.hero{padding:54px 0 30px;display:grid;grid-template-columns:1fr 360px;gap:36px;align-items:center}
+@media(max-width:860px){.hero{grid-template-columns:1fr}.hero-art{max-width:320px;margin:0 auto}}
+.hero-art{width:100%}
+.hero-art svg{width:100%;height:auto;display:block;filter:drop-shadow(0 0 24px rgba(255,180,84,.12))}
+@keyframes led{0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes ledg{0%,100%{opacity:.3}50%{opacity:1}}
+@keyframes flow{to{stroke-dashoffset:-64}}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
+.l1{animation:led 1.3s infinite}.l2{animation:led 2.1s .4s infinite}.l3{animation:ledg 1.7s .2s infinite}
+.l4{animation:ledg 2.4s .9s infinite}.l5{animation:led 1.9s .6s infinite}.l6{animation:ledg 1.5s 1.1s infinite}
+.fl{stroke-dasharray:6 10;animation:flow 1.6s linear infinite}
+.fl2{stroke-dasharray:4 12;animation:flow 2.6s linear infinite}
+.gp{animation:pulse 3.2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.l1,.l2,.l3,.l4,.l5,.l6,.fl,.fl2,.gp{animation:none}}
+h1{font-family:var(--disp);font-weight:700;font-size:clamp(30px,5vw,46px);line-height:1.1;margin-bottom:14px}
+h1 em{font-style:normal;color:var(--amber)}
+.lede{color:var(--muted);font-size:16.5px;max-width:640px}
+.tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;padding:10px 0 30px}
+.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;text-decoration:none;color:var(--text);transition:border-color .15s}
+.card:hover{border-color:var(--amber)}
+.card .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+.card h2{font-family:var(--disp);font-size:20px;margin:8px 0 8px}
+.card p{color:var(--muted);font-size:13.5px}
+.card .go{display:inline-block;margin-top:14px;font-family:var(--mono);font-size:12.5px;color:var(--amber)}
+.card.soon{opacity:.55;pointer-events:none}
+.card.soon .go{color:var(--muted)}
+.why{padding:20px 0 30px;max-width:760px}
+.why h2{font-family:var(--disp);font-size:22px;margin-bottom:10px}
+.why p{color:var(--muted);margin-bottom:12px}
+footer{border-top:1px solid var(--line);margin-top:20px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;padding:20px;color:var(--muted);font-size:12.5px}
+footer .wrap span b{color:var(--text);font-family:var(--disp)}
+a:focus,.card:focus{outline:2px solid var(--amber);outline-offset:2px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="/" aria-label="terabyte.tools home">
+      <svg width="26" height="26" viewBox="0 0 96 96" aria-hidden="true"><rect x="10" y="14" width="76" height="22" rx="7" fill="#FFB454"/><path d="M22 25h22" stroke="#10161D" stroke-width="5" stroke-linecap="round"/><circle cx="63" cy="25" r="4.5" fill="#10161D"/><circle cx="75" cy="25" r="4.5" fill="#10161D"/><rect x="34" y="44" width="28" height="16" rx="5" fill="#596B7E"/><path d="M41 52h14" stroke="#10161D" stroke-width="4" stroke-linecap="round"/><rect x="34" y="66" width="28" height="16" rx="5" fill="#596B7E"/><path d="M41 74h14" stroke="#10161D" stroke-width="4" stroke-linecap="round"/></svg>
+      <b>terabyte<span>.tools</span></b>
+    </a>
+    <span class="tag">no fluff, no signup</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <div>
+      <h1>Calculators for people who <em>run infrastructure</em></h1>
+      <p class="lede">Sizing backups, planning subnets, dimensioning clusters. The arithmetic sysadmins do on whiteboards and napkins, turned into precise, shareable tools. Everything runs in your browser; nothing is uploaded, tracked or paywalled.</p>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 360 320" xmlns="http://www.w3.org/2000/svg" role="img">
+        <!-- backdrop grid -->
+        <g stroke="#2C3947" stroke-width="1" opacity=".5">
+          <path d="M20 300h320M20 260h320M20 220h320" class="gp"/>
+        </g>
+        <!-- data flows -->
+        <g fill="none" stroke-linecap="round">
+          <path class="fl"  d="M60 40 C 120 20, 200 20, 262 44" stroke="#FFB454" stroke-width="2"/>
+          <path class="fl2" d="M40 90 C 110 70, 210 70, 280 92" stroke="#7FB3E3" stroke-width="1.6" opacity=".7"/>
+          <path class="fl2" d="M300 250 C 250 285, 120 290, 58 262" stroke="#59D68C" stroke-width="1.6" opacity=".55"/>
+        </g>
+        <!-- rack -->
+        <g>
+          <rect x="96" y="52" width="168" height="226" rx="12" fill="#18212B" stroke="#2C3947" stroke-width="2"/>
+          <rect x="96" y="52" width="168" height="226" rx="12" fill="none" stroke="#FFB454" stroke-width="1" opacity=".15"/>
+          <!-- units -->
+          <g>
+            <rect x="110" y="68"  width="140" height="26" rx="5" fill="#1F2A36" stroke="#2C3947"/>
+            <rect x="110" y="102" width="140" height="26" rx="5" fill="#1F2A36" stroke="#2C3947"/>
+            <rect x="110" y="136" width="140" height="26" rx="5" fill="#1F2A36" stroke="#2C3947"/>
+            <rect x="110" y="170" width="140" height="26" rx="5" fill="#1F2A36" stroke="#2C3947"/>
+            <rect x="110" y="204" width="140" height="26" rx="5" fill="#1F2A36" stroke="#2C3947"/>
+            <rect x="110" y="238" width="140" height="26" rx="5" fill="#FFB454" opacity=".92"/>
+          </g>
+          <!-- vents -->
+          <g stroke="#2C3947" stroke-width="2" stroke-linecap="round">
+            <path d="M122 81h44M122 115h44M122 149h44M122 183h44M122 217h44"/>
+          </g>
+          <g stroke="#10161D" stroke-width="2" stroke-linecap="round">
+            <path d="M122 251h44"/>
+          </g>
+          <!-- LEDs -->
+          <g>
+            <circle class="l1" cx="226" cy="81"  r="4" fill="#FFB454"/>
+            <circle class="l3" cx="240" cy="81"  r="4" fill="#59D68C"/>
+            <circle class="l4" cx="226" cy="115" r="4" fill="#59D68C"/>
+            <circle class="l2" cx="240" cy="115" r="4" fill="#FFB454"/>
+            <circle class="l5" cx="226" cy="149" r="4" fill="#FFB454"/>
+            <circle class="l6" cx="240" cy="149" r="4" fill="#59D68C"/>
+            <circle class="l3" cx="226" cy="183" r="4" fill="#59D68C"/>
+            <circle class="l1" cx="240" cy="183" r="4" fill="#FFB454"/>
+            <circle class="l6" cx="226" cy="217" r="4" fill="#59D68C"/>
+            <circle class="l5" cx="240" cy="217" r="4" fill="#FFB454"/>
+            <circle cx="226" cy="251" r="4" fill="#10161D"/>
+            <circle cx="240" cy="251" r="4" fill="#10161D"/>
+          </g>
+        </g>
+        <!-- caption chip -->
+        <g font-family="IBM Plex Mono,monospace">
+          <rect x="118" y="288" width="124" height="22" rx="6" fill="#18212B" stroke="#2C3947"/>
+          <text x="180" y="303" text-anchor="middle" font-size="11" fill="#8A99AB">capacity: <tspan fill="#FFB454">planned</tspan></text>
+        </g>
+      </svg>
+    </div>
+  </section>
+
+  <section class="tools" aria-label="Available tools">
+    <a class="card" href="/backup-retention-calculator/">
+      <span class="eyebrow">Tool 01 · Backup &amp; Storage</span>
+      <h2>Backup retention &amp; sizing calculator</h2>
+      <p>Model GFS retention against data growth, change rate and deduplication engine, global, per-copy or raw, and get 1/3/5-year capacity projections with CSV export.</p>
+      <span class="go">Open →</span>
+    </a>
+    <a class="card" href="/subnet-calculator/">
+      <span class="eyebrow">Tool 02 · Networking</span>
+      <h2>Subnet calculator</h2>
+      <p>Network, broadcast, host range, netmask and wildcard for any IPv4 CIDR. With the binary laid out bit by bit, plus VLSM splitting into smaller subnets.</p>
+      <span class="go">Open →</span>
+    </a>
+    <a class="card" href="/raid-calculator/">
+      <span class="eyebrow">Tool 03 · Storage</span>
+      <h2>RAID &amp; ZFS capacity calculator</h2>
+      <p>Usable capacity, efficiency, fault tolerance and URE rebuild risk for RAID 0/1/5/6/10 and RAIDZ1/2/3. With a comparison of every layout on your drives.</p>
+      <span class="go">Open →</span>
+    </a>
+    <a class="card" href="/backup-window-calculator/">
+      <span class="eyebrow">Tool 04 · Backup &amp; Networking</span>
+      <h2>Backup window &amp; bandwidth calculator</h2>
+      <p>Transfer time for any data size on any link, with realistic utilization, and the bandwidth you need to fit a backup window. 100 Mbps to 100 GbE compared.</p>
+      <span class="go">Open →</span>
+    </a>
+    <a class="card" href="/kubernetes-sizing-calculator/">
+      <span class="eyebrow">Tool 05 · Kubernetes</span>
+      <h2>Kubernetes cluster sizing calculator</h2>
+      <p>Nodes needed from pod requests, system reserves, pod-per-node limits and N+1 failover. With a comparison across node shapes.</p>
+      <span class="go">Open →</span>
+    </a>
+    <a class="card" href="/vm-consolidation-calculator/">
+      <span class="eyebrow">Tool 06 · Virtualization</span>
+      <h2>VM consolidation &amp; overcommit calculator</h2>
+      <p>Hosts needed for your VM fleet at any vCPU:core ratio, RAM-honest, with N+1 failover and a guide to which ratio suits which workload.</p>
+      <span class="go">Open →</span>
+    </a>
+    <a class="card" href="/cloud-vs-onprem-calculator/">
+      <span class="eyebrow">Tool 07 · Cloud &amp; Infrastructure</span>
+      <h2>Cloud vs on-premise cost calculator</h2>
+      <p>Monthly and 5-year TCO with every rate editable. Compute, storage, egress vs capex, power, colo and support. No vendor propaganda.</p>
+      <span class="go">Open →</span>
+    </a>
+  </section>
+
+  <section class="why">
+    <h2>Why these tools exist</h2>
+    <p>Vendor sizers are marketing funnels, spreadsheets get lost, and most online calculators were last touched in 2010. These are built by a working backup and infrastructure engineer, model the math honestly, including where it's an approximation, and every result is a shareable URL you can drop in a ticket, a design doc or a forum answer.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><b>terabyte.tools</b>. Calculators for people who run infrastructure</span>
+    <span>Runs entirely in your browser · No data leaves this page</span>
+    <span><a href="/privacy/">Privacy</a> · <a href="/cookies/">Cookies</a> · <a href="/terms/">Terms</a></span>
+  </div>
+</footer>
+</body>
+</html>

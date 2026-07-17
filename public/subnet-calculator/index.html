@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subnet Calculator, CIDR, netmask &amp; VLSM splitter, terabyte.tools</title>
+<meta name="description" content="Free IPv4 subnet calculator. Get network, broadcast, usable host range, netmask and wildcard for any CIDR. Visualize network vs host bits in binary and split a network into smaller subnets.">
+<link rel="canonical" href="https://terabyte.tools/subnet-calculator/">
+<meta property="og:title" content="Subnet Calculator. CIDR, netmask & VLSM splitter">
+<meta property="og:description" content="Network, broadcast, host range and binary breakdown for any IPv4 CIDR. Split networks into smaller subnets.">
+<meta property="og:url" content="https://terabyte.tools/subnet-calculator/">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://terabyte.tools/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#10161D; --panel:#18212B; --panel2:#1F2A36; --line:#2C3947;
+  --text:#DCE4EE; --muted:#8A99AB; --amber:#FFB454; --amber-dim:#8a6a3a;
+  --green:#59D68C; --blue:#7FB3E3;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Inter',system-ui,sans-serif;
+  --disp:'Space Grotesk',var(--sans);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--blue)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand b{font-family:var(--disp);font-weight:700;font-size:17px;letter-spacing:.2px}
+.brand b span{color:var(--amber)}
+.nav a.all{font-family:var(--mono);font-size:12px;color:var(--muted);text-decoration:none}
+.nav a.all:hover{color:var(--amber)}
+.hero{padding:38px 0 8px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+h1{font-family:var(--disp);font-weight:700;font-size:clamp(26px,4vw,40px);line-height:1.12;margin:10px 0 12px;max-width:760px}
+.lede{color:var(--muted);max-width:680px}
+.grid{display:grid;grid-template-columns:360px 1fr;gap:22px;padding:28px 0 10px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.panel h2{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:14px 18px;border-bottom:1px solid var(--line)}
+.panel .body{padding:18px}
+.row{display:grid;grid-template-columns:1fr 130px;align-items:center;gap:10px;margin-bottom:12px}
+.row label{font-size:13.5px}
+.row small{display:block;color:var(--muted);font-size:12px}
+input[type=text],select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:14px;padding:8px 10px}
+input:focus,select:focus,button:focus,a:focus{outline:2px solid var(--amber);outline-offset:1px}
+input.err{border-color:#e06c6c}
+.hint{font-size:12.5px;color:var(--muted)}
+.results{display:flex;flex-direction:column;gap:22px}
+dl{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+@media(max-width:640px){dl{grid-template-columns:1fr}}
+dl>div{background:var(--panel);padding:12px 18px}
+dt{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+dd{font-family:var(--mono);font-size:16px;font-weight:500;margin-top:2px;word-break:break-all}
+dd b{color:var(--amber);font-weight:600}
+.badge{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);border-radius:4px;padding:2px 8px;margin-left:8px;color:var(--green)}
+.bits{padding:18px;overflow-x:auto}
+.octet{display:inline-block;margin-right:14px;text-align:center}
+.octet .b{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:600;width:16px;padding:5px 0;border-radius:3px}
+.b.net{background:rgba(255,180,84,.18);color:var(--amber)}
+.b.host{background:rgba(89,107,126,.18);color:var(--muted)}
+.octet .dec{display:block;font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:6px}
+.bitslegend{padding:0 18px 16px;font-size:12.5px;color:var(--muted)}
+.bitslegend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 6px 0 14px;vertical-align:-1px}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}
+th,td{text-align:left;padding:9px 18px;border-top:1px solid var(--line)}
+th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500;border-top:0}
+.actions{display:flex;flex-wrap:wrap;gap:10px;padding:16px 18px;border-top:1px solid var(--line)}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:6px;padding:9px 16px;font-family:var(--mono);font-size:13px}
+button.primary{background:var(--amber);border-color:var(--amber);color:#1a1207;font-weight:600}
+button:hover{border-color:var(--amber)}
+#copied{color:var(--green);font-size:12.5px;align-self:center;opacity:0;transition:opacity .3s}
+.method{padding:34px 0 20px;max-width:760px}
+.method h2{font-family:var(--disp);font-size:22px;margin-bottom:10px}
+.method p{color:var(--muted);margin-bottom:12px}
+.method code{font-family:var(--mono);font-size:13px;color:var(--amber)}
+footer{border-top:1px solid var(--line);margin-top:30px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;padding:20px;color:var(--muted);font-size:12.5px}
+footer .wrap span b{color:var(--text);font-family:var(--disp)}
+
+.row:has(select){grid-template-columns:1fr;gap:6px}
+.row:has(select) select{width:100%}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="/" aria-label="terabyte.tools home">
+      <svg width="26" height="26" viewBox="0 0 96 96" aria-hidden="true"><rect x="10" y="14" width="76" height="22" rx="7" fill="#FFB454"/><path d="M22 25h22" stroke="#10161D" stroke-width="5" stroke-linecap="round"/><circle cx="63" cy="25" r="4.5" fill="#10161D"/><circle cx="75" cy="25" r="4.5" fill="#10161D"/><rect x="34" y="44" width="28" height="16" rx="5" fill="#596B7E"/><path d="M41 52h14" stroke="#10161D" stroke-width="4" stroke-linecap="round"/><rect x="34" y="66" width="28" height="16" rx="5" fill="#596B7E"/><path d="M41 74h14" stroke="#10161D" stroke-width="4" stroke-linecap="round"/></svg>
+      <b>terabyte<span>.tools</span></b>
+    </a>
+    <a class="all" href="/">← all tools</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="eyebrow">Tool 02 · Networking</span>
+    <h1>Subnet calculator</h1>
+    <p class="lede">Enter any IPv4 address and prefix to get the network, broadcast, usable host range, netmask and wildcard. With the network and host bits laid out in binary so the math is visible, not magic. Then split the network into smaller subnets for VLSM planning.</p>
+  </section>
+
+  <section class="grid">
+    <form class="panel" id="form" aria-label="Subnet inputs">
+      <h2>Input</h2>
+      <div class="body">
+        <div class="row"><label for="ip">IPv4 address</label><input id="ip" type="text" value="192.168.10.77" inputmode="decimal" autocomplete="off" spellcheck="false"></div>
+        <div class="row"><label for="prefix">Prefix / CIDR</label><select id="prefix"></select></div>
+        <div class="row"><label for="split">Split into<small>VLSM: divide this network</small></label><select id="split"></select></div>
+        <p class="hint" id="maskHint"></p>
+      </div>
+    </form>
+
+    <div class="results">
+      <div class="panel">
+        <h2>Network <span id="type" class="badge" hidden></span></h2>
+        <dl>
+          <div><dt>Network</dt><dd id="net">—</dd></div>
+          <div><dt>Broadcast</dt><dd id="bc">—</dd></div>
+          <div><dt>First usable host</dt><dd id="first">—</dd></div>
+          <div><dt>Last usable host</dt><dd id="last">—</dd></div>
+          <div><dt>Usable hosts</dt><dd id="hosts">—</dd></div>
+          <div><dt>Total addresses</dt><dd id="total">—</dd></div>
+          <div><dt>Netmask</dt><dd id="mask">—</dd></div>
+          <div><dt>Wildcard</dt><dd id="wild">—</dd></div>
+        </dl>
+        <div class="actions">
+          <button class="primary" id="copy" type="button">Copy summary</button>
+          <button id="share" type="button">Copy share link</button>
+          <span id="copied">Copied</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Binary breakdown</h2>
+        <div class="bits" id="bits"></div>
+        <p class="bitslegend">Bits: <i style="background:rgba(255,180,84,.5)"></i>network <i style="background:rgba(89,107,126,.5)"></i>host. The prefix length is simply how many bits belong to the network.</p>
+      </div>
+
+      <div class="panel" id="splitPanel" hidden>
+        <h2>Subnets (<span id="splitCount"></span>)</h2>
+        <table>
+          <thead><tr><th>#</th><th>Network</th><th>Host range</th><th>Broadcast</th><th>Hosts</th></tr></thead>
+          <tbody id="splitBody"></tbody>
+        </table>
+        <p class="bitslegend" id="splitNote" hidden>Showing the first 128 subnets. Export or narrow the split to see the rest.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="method">
+    <h2>How subnetting works</h2>
+    <p>An IPv4 address is 32 bits. The prefix (the <code>/24</code> in CIDR notation) says how many of those bits identify the network; the rest identify hosts inside it. The netmask is the same information written as an address: <code>/24 = 255.255.255.0</code>, i.e. 24 ones followed by 8 zeros. The wildcard mask is its inverse, used in ACLs and OSPF configuration.</p>
+    <p>The network address is the input address with all host bits set to zero (<code>IP AND mask</code>); the broadcast sets them all to one. Everything in between is usable by hosts, which is why a subnet holds <code>2^(host bits) − 2</code> addresses. Minus network and broadcast. Two special cases: <code>/31</code> keeps both addresses for point-to-point links (RFC 3021), and <code>/32</code> is a single host route.</p>
+    <p>Splitting a network borrows host bits to create more, smaller networks: each extra prefix bit doubles the subnet count and halves their size. That's all VLSM is. Choosing a different split per branch so address space matches actual need.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><b>terabyte.tools</b>. Calculators for people who run infrastructure</span>
+    <span>Runs entirely in your browser · No data leaves this page</span>
+    <span><a href="/privacy/">Privacy</a> · <a href="/cookies/">Cookies</a> · <a href="/terms/">Terms</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const ipToInt=s=>{const p=s.trim().split('.');if(p.length!==4)return null;let v=0;
+    for(const o of p){if(!/^\d{1,3}$/.test(o))return null;const n=+o;if(n>255)return null;v=((v<<8)|n)>>>0;}return v;};
+  const intToIp=v=>[(v>>>24)&255,(v>>>16)&255,(v>>>8)&255,v&255].join('.');
+  const maskOf=p=>p===0?0:(0xFFFFFFFF<<(32-p))>>>0;
+  const fmtN=n=>n.toLocaleString('en-US');
+
+  // populate selects
+  for(let i=32;i>=1;i--){const o=document.createElement('option');o.value=i;o.textContent='/'+i+'  ('+intToIp(maskOf(i))+')';$('prefix').appendChild(o);}
+  $('prefix').value=24;
+
+  function netType(ip){
+    const a=(ip>>>24)&255,b=(ip>>>16)&255;
+    if(a===10||(a===172&&b>=16&&b<=31)||(a===192&&b===168))return['Private RFC1918','var(--green)'];
+    if(a===127)return['Loopback','var(--blue)'];
+    if(a===169&&b===254)return['Link-local','var(--blue)'];
+    if(a===100&&b>=64&&b<=127)return['CGNAT 100.64/10','var(--blue)'];
+    if(a>=224&&a<=239)return['Multicast','var(--amber)'];
+    if(a>=240)return['Reserved','var(--amber)'];
+    return['Public','var(--amber)'];
+  }
+
+  function drawBits(ip,prefix){
+    let html='';
+    for(let o=0;o<4;o++){
+      html+='<span class="octet">';
+      for(let b=0;b<8;b++){
+        const idx=o*8+b;
+        const bit=(ip>>>(31-idx))&1;
+        html+=`<span class="b ${idx<prefix?'net':'host'}">${bit}</span>`;
+      }
+      html+=`<span class="dec">${(ip>>>(24-o*8))&255}</span></span>`;
+      if(o===3)break;
+    }
+    $('bits').innerHTML=html;
+  }
+
+  function updateSplitOptions(prefix){
+    const sel=$('split');const cur=sel.value;sel.innerHTML='<option value="">— no split —</option>';
+    for(let t=prefix+1;t<=Math.min(prefix+10,32);t++){
+      const n=Math.pow(2,t-prefix);
+      const o=document.createElement('option');o.value=t;o.textContent=`${n} × /${t}`;sel.appendChild(o);
+    }
+    if([...sel.options].some(o=>o.value===cur))sel.value=cur;
+  }
+
+  function usable(prefix,net,bc){
+    if(prefix>=32)return{first:net,last:net,count:1,total:1};
+    if(prefix===31)return{first:net,last:bc,count:2,total:2};
+    return{first:net+1,last:bc-1,count:Math.pow(2,32-prefix)-2,total:Math.pow(2,32-prefix)};
+  }
+
+  let summary='';
+  function calc(){
+    const prefix=+$('prefix').value;
+    updateSplitOptions(prefix);
+    const ip=ipToInt($('ip').value);
+    $('ip').classList.toggle('err',ip===null);
+    if(ip===null)return;
+    const mask=maskOf(prefix);
+    const net=(ip&mask)>>>0;
+    const bc=(net|(~mask>>>0))>>>0;
+    const u=usable(prefix,net,bc);
+    $('net').innerHTML=`<b>${intToIp(net)}</b>/${prefix}`;
+    $('bc').textContent=intToIp(bc);
+    $('first').textContent=intToIp(u.first);
+    $('last').textContent=intToIp(u.last);
+    $('hosts').textContent=fmtN(u.count);
+    $('total').textContent=fmtN(u.total);
+    $('mask').textContent=intToIp(mask);
+    $('wild').textContent=intToIp(~mask>>>0);
+    const[t]=netType(ip);
+    $('type').textContent=t;$('type').hidden=false;
+    $('maskHint').textContent=`Netmask ${intToIp(mask)} · wildcard ${intToIp(~mask>>>0)}`;
+    drawBits(ip,prefix);
+    summary=`${intToIp(ip)}/${prefix} — network ${intToIp(net)}, broadcast ${intToIp(bc)}, hosts ${intToIp(u.first)}–${intToIp(u.last)} (${fmtN(u.count)} usable), netmask ${intToIp(mask)}, wildcard ${intToIp(~mask>>>0)} [terabyte.tools]`;
+    // split table
+    const t2=$('split').value;
+    if(t2){
+      const tp=+t2,n=Math.pow(2,tp-prefix),size=Math.pow(2,32-tp);
+      const shown=Math.min(n,128);
+      let rows='';
+      for(let i=0;i<shown;i++){
+        const sn=(net+i*size)>>>0,sbc=(sn+size-1)>>>0;
+        const su=usable(tp,sn,sbc);
+        rows+=`<tr><td>${i+1}</td><td>${intToIp(sn)}/${tp}</td><td>${intToIp(su.first)} – ${intToIp(su.last)}</td><td>${intToIp(sbc)}</td><td>${fmtN(su.count)}</td></tr>`;
+      }
+      $('splitBody').innerHTML=rows;
+      $('splitCount').textContent=`${n} × /${tp}`;
+      $('splitNote').hidden=n<=128;
+      $('splitPanel').hidden=false;
+    }else{$('splitPanel').hidden=true;}
+  }
+
+  $('copy').addEventListener('click',()=>{
+    navigator.clipboard.writeText(summary).then(()=>{const c=$('copied');c.style.opacity=1;setTimeout(()=>c.style.opacity=0,1800);});
+  });
+  $('share').addEventListener('click',()=>{
+    const q=new URLSearchParams({ip:$('ip').value,prefix:$('prefix').value});
+    if($('split').value)q.set('split',$('split').value);
+    const url=location.origin+location.pathname+'?'+q.toString();
+    navigator.clipboard.writeText(url).then(()=>{const c=$('copied');c.style.opacity=1;setTimeout(()=>c.style.opacity=0,1800);});
+    history.replaceState(null,'','?'+q.toString());
+  });
+
+  const q=new URLSearchParams(location.search);
+  if(q.has('ip'))$('ip').value=q.get('ip');
+  if(q.has('prefix'))$('prefix').value=q.get('prefix');
+  calc();
+  if(q.has('split')){$('split').value=q.get('split');calc();}
+
+  $('form').addEventListener('input',calc);
+  $('form').addEventListener('change',calc);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAID &amp; ZFS Capacity Calculator, usable space, fault tolerance &amp; rebuild risk, terabyte.tools</title>
+<meta name="description" content="Free RAID and ZFS calculator: usable capacity, storage efficiency, fault tolerance and URE rebuild risk for RAID 0/1/5/6/10 and RAIDZ1/2/3, including striped vdevs. Compare all levels with your drives.">
+<link rel="canonical" href="https://terabyte.tools/raid-calculator/">
+<meta property="og:title" content="RAID & ZFS Capacity Calculator">
+<meta property="og:description" content="Usable capacity, fault tolerance and rebuild risk for RAID and RAIDZ layouts.">
+<meta property="og:url" content="https://terabyte.tools/raid-calculator/">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://terabyte.tools/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#10161D; --panel:#18212B; --panel2:#1F2A36; --line:#2C3947;
+  --text:#DCE4EE; --muted:#8A99AB; --amber:#FFB454; --green:#59D68C; --blue:#7FB3E3; --red:#E06C6C;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Inter',system-ui,sans-serif;
+  --disp:'Space Grotesk',var(--sans);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--blue)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand b{font-family:var(--disp);font-weight:700;font-size:17px}
+.brand b span{color:var(--amber)}
+.nav a.all{font-family:var(--mono);font-size:12px;color:var(--muted);text-decoration:none}
+.nav a.all:hover{color:var(--amber)}
+.hero{padding:38px 0 8px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+h1{font-family:var(--disp);font-weight:700;font-size:clamp(26px,4vw,40px);line-height:1.12;margin:10px 0 12px;max-width:760px}
+.lede{color:var(--muted);max-width:680px}
+.grid{display:grid;grid-template-columns:360px 1fr;gap:22px;padding:28px 0 10px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.panel h2{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:14px 18px;border-bottom:1px solid var(--line)}
+.panel .body{padding:18px}
+.row{display:grid;grid-template-columns:1fr 130px;align-items:center;gap:10px;margin-bottom:12px}
+.row label{font-size:13.5px}
+.row small{display:block;color:var(--muted);font-size:12px}
+input[type=number],select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:14px;padding:8px 10px}
+input:focus,select:focus,button:focus,a:focus{outline:2px solid var(--amber);outline-offset:1px}
+.hint{font-size:12.5px;color:var(--muted)}
+.hint.warn{color:var(--red)}
+.results{display:flex;flex-direction:column;gap:22px}
+.headline{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px;padding:18px}
+.big{font-family:var(--mono);font-weight:600;font-size:clamp(34px,5vw,52px);color:var(--amber);line-height:1}
+.big em{font-style:normal;font-size:.45em;color:var(--muted);font-weight:400}
+.headline p{color:var(--muted);font-size:13px;width:100%}
+.miles{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line)}
+@media(max-width:640px){.miles{grid-template-columns:1fr}}
+.mile{background:var(--panel);padding:14px 18px}
+.mile b{display:block;font-family:var(--mono);font-size:20px;font-weight:600}
+.mile span{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.shelf{display:flex;height:34px;border-radius:6px;overflow:hidden;border:1px solid var(--line);margin:6px 0 10px}
+.seg-d{background:var(--amber)} .seg-p{background:#596B7E}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}
+th,td{text-align:right;padding:9px 18px;border-top:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500;border-top:0}
+tr.cur td{color:var(--amber)}
+td b{font-weight:600}
+.risk{font-family:var(--mono);font-weight:600}
+.risk.lo{color:var(--green)} .risk.mid{color:var(--amber)} .risk.hi{color:var(--red)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;padding:16px 18px;border-top:1px solid var(--line)}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:6px;padding:9px 16px;font-family:var(--mono);font-size:13px}
+button.primary{background:var(--amber);border-color:var(--amber);color:#1a1207;font-weight:600}
+button:hover{border-color:var(--amber)}
+#copied{color:var(--green);font-size:12.5px;align-self:center;opacity:0;transition:opacity .3s}
+.method{padding:34px 0 20px;max-width:760px}
+.method h2{font-family:var(--disp);font-size:22px;margin-bottom:10px}
+.method p{color:var(--muted);margin-bottom:12px}
+.method code{font-family:var(--mono);font-size:13px;color:var(--amber)}
+footer{border-top:1px solid var(--line);margin-top:30px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;padding:20px;color:var(--muted);font-size:12.5px}
+footer .wrap span b{color:var(--text);font-family:var(--disp)}
+
+.row:has(select){grid-template-columns:1fr;gap:6px}
+.row:has(select) select{width:100%}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="/" aria-label="terabyte.tools home">
+      <svg width="26" height="26" viewBox="0 0 96 96" aria-hidden="true"><rect x="10" y="14" width="76" height="22" rx="7" fill="#FFB454"/><path d="M22 25h22" stroke="#10161D" stroke-width="5" stroke-linecap="round"/><circle cx="63" cy="25" r="4.5" fill="#10161D"/><circle cx="75" cy="25" r="4.5" fill="#10161D"/><rect x="34" y="44" width="28" height="16" rx="5" fill="#596B7E"/><path d="M41 52h14" stroke="#10161D" stroke-width="4" stroke-linecap="round"/><rect x="34" y="66" width="28" height="16" rx="5" fill="#596B7E"/><path d="M41 74h14" stroke="#10161D" stroke-width="4" stroke-linecap="round"/></svg>
+      <b>terabyte<span>.tools</span></b>
+    </a>
+    <a class="all" href="/">← all tools</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="eyebrow">Tool 03 · Storage</span>
+    <h1>RAID &amp; ZFS capacity calculator</h1>
+    <p class="lede">Usable space, storage efficiency and fault tolerance for classic RAID and ZFS layouts, including striped vdevs, plus the number most calculators won't show you: the probability of hitting an unrecoverable read error during a rebuild.</p>
+  </section>
+
+  <section class="grid">
+    <form class="panel" id="form" aria-label="Array inputs">
+      <h2>Array</h2>
+      <div class="body">
+        <div class="row"><label for="dsize">Drive size</label><span style="position:relative"><input id="dsize" type="number" min="0.1" step="0.5" value="16" style="padding-right:38px"><i style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-style:normal;font-family:var(--mono);font-size:11px;color:var(--muted)">TB</i></span></div>
+        <div class="row"><label for="width">Drives per group<small>vdev width / span width</small></label><input id="width" type="number" min="2" max="24" step="1" value="8"></div>
+        <div class="row"><label for="groups">Groups<small>vdevs / spans striped together</small></label><input id="groups" type="number" min="1" max="16" step="1" value="1"></div>
+        <div class="row"><label for="level">Layout</label>
+          <select id="level">
+            <option value="r0">Stripe (RAID 0)</option>
+            <option value="r1">Mirror (RAID 1 / 10)</option>
+            <option value="r5">RAID 5 / RAIDZ1</option>
+            <option value="r6" selected>RAID 6 / RAIDZ2</option>
+            <option value="z3">RAIDZ3</option>
+          </select>
+        </div>
+        <div class="row"><label for="ure">Drive URE rate<small>from the drive datasheet</small></label>
+          <select id="ure">
+            <option value="1e14">1 in 10^14 (desktop)</option>
+            <option value="1e15" selected>1 in 10^15 (NAS/enterprise)</option>
+            <option value="1e16">1 in 10^16 (high-end)</option>
+          </select>
+        </div>
+        <p class="hint" id="layoutHint"></p>
+        <p class="hint warn" id="warnHint" hidden></p>
+      </div>
+    </form>
+
+    <div class="results">
+      <div class="panel">
+        <h2>Capacity</h2>
+        <div class="headline">
+          <span class="big" id="bigNum">—</span>
+          <span class="big" style="color:var(--muted);font-size:16px">usable</span>
+          <p id="bigNote"></p>
+        </div>
+        <div class="miles">
+          <div class="mile"><span>Efficiency</span><b id="eff">—</b></div>
+          <div class="mile"><span>Fault tolerance</span><b id="ft">—</b></div>
+          <div class="mile"><span>Rebuild URE risk</span><b id="risk">—</b></div>
+        </div>
+        <div class="body">
+          <div class="shelf" id="shelf" role="img" aria-label="Data vs redundancy split"></div>
+          <div class="legend">
+            <span><i class="seg-d"></i>Data (<span id="lgD">—</span>)</span>
+            <span><i class="seg-p"></i>Redundancy (<span id="lgP">—</span>)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>All layouts with these drives</h2>
+        <table>
+          <thead><tr><th>Layout</th><th>Usable</th><th>Efficiency</th><th>Tolerance</th><th>Rebuild URE risk</th></tr></thead>
+          <tbody id="cmp"></tbody>
+        </table>
+        <div class="actions">
+          <button class="primary" id="copy" type="button">Copy summary</button>
+          <button id="share" type="button">Copy share link</button>
+          <span id="copied">Copied</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="method">
+    <h2>How it's calculated</h2>
+    <p>Usable capacity per group: stripe keeps all <code>w</code> drives, a mirror keeps 1 of <code>w</code>, single parity keeps <code>w−1</code>, double parity <code>w−2</code>, triple parity <code>w−3</code>. Groups stripe together, so totals multiply. A mirror layout with multiple groups is exactly RAID 10, and multiple RAIDZ groups are striped vdevs in a pool. Capacities are decimal TB as sold by drive vendors; the TiB figure is what your OS will report. Real-world ZFS pools lose a further few percent to metadata, padding and the default slop reservation.</p>
+    <p>Rebuild URE risk is the probability of hitting at least one unrecoverable read error while reading the data needed to rebuild one failed drive: <code>P = 1 − (1 − 1/URE)^bits</code>, where a mirror rebuild reads its surviving copy and a parity rebuild reads the whole remaining group. For double and triple parity the figure shown is the risk during the <em>first</em> rebuild while redundancy still covers a URE. That is exactly why RAID 5 with large desktop drives is a gamble and RAID 6/Z2 exists. Tolerance is per group: losing more drives than the group's parity kills the whole pool, no matter how many other groups are healthy.</p>
+    <p>This is a planning model: it assumes independent failures and datasheet URE rates, which are conservative for healthy drives and optimistic for a batch with a defect. Pair wide, large-drive groups with a tested backup. RAID is availability, not backup.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><b>terabyte.tools</b>. Calculators for people who run infrastructure</span>
+    <span>Runs entirely in your browser · No data leaves this page</span>
+    <span><a href="/privacy/">Privacy</a> · <a href="/cookies/">Cookies</a> · <a href="/terms/">Terms</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const LV={
+    r0:{name:'Stripe (RAID 0)',keep:w=>w,tol:0},
+    r1:{name:'Mirror (RAID 1/10)',keep:_=>1,tol:w=>w-1},
+    r5:{name:'RAID 5 / RAIDZ1',keep:w=>w-1,tol:1},
+    r6:{name:'RAID 6 / RAIDZ2',keep:w=>w-2,tol:2},
+    z3:{name:'RAIDZ3',keep:w=>w-3,tol:3}
+  };
+  const fmt=tb=>!isFinite(tb)?'—':tb>=1000?(tb/1000).toFixed(2)+' PB':tb.toFixed(tb>=100?0:1)+' TB';
+  const tib=tb=>tb*1e12/Math.pow(2,40);
+
+  function ureRisk(level,w,s,ure){
+    if(level==='r0')return null;
+    const readTB=level==='r1'?s:(w-1)*s;
+    const bits=readTB*8e12;
+    const p=1-Math.exp(-bits/ure);
+    return p;
+  }
+  function riskCell(p,covered){
+    if(p===null)return'<span class="risk hi">array lost</span>';
+    const pct=p<0.001?(p*100).toExponential(1)+'%':(p*100).toFixed(p>0.1?0:1)+'%';
+    if(covered)return`<span class="risk lo">${pct} (covered)</span>`;
+    const cls=p>0.5?'hi':p>0.05?'mid':'lo';
+    return`<span class="risk ${cls}">${pct}</span>`;
+  }
+
+  function compute(level,w,g,s,ure){
+    const L=LV[level];
+    const keep=Math.max(L.keep(w),0);
+    const usable=keep*s*g;
+    const raw=w*s*g;
+    const tol=typeof L.tol==='function'?L.tol(w):L.tol;
+    const p=ureRisk(level,w,s,ure);
+    return{name:L.name,usable,raw,eff:usable/raw,tol,p,covered:level==='r6'||level==='z3'};
+  }
+
+  let summary='';
+  function calc(){
+    const s=Math.max(0.1,parseFloat($('dsize').value)||0);
+    let w=Math.round(Math.max(2,Math.min(24,parseFloat($('width').value)||2)));
+    const g=Math.round(Math.max(1,Math.min(16,parseFloat($('groups').value)||1)));
+    const level=$('level').value, ure=parseFloat($('ure').value);
+    const minW={r0:2,r1:2,r5:3,r6:4,z3:5}[level];
+    $('warnHint').hidden=w>=minW;
+    if(w<minW){$('warnHint').textContent=`This layout needs at least ${minW} drives per group.`;}
+    const c=compute(level,w,g,s,ure);
+    const totalDrives=w*g;
+    $('layoutHint').textContent=`${totalDrives} × ${s} TB drives · ${g} group${g>1?'s':''} of ${w} · raw ${fmt(c.raw)}`;
+    $('bigNum').textContent=fmt(c.usable);
+    $('bigNote').textContent=`≈ ${tib(c.usable).toFixed(1)} TiB as reported by the OS. Raw capacity ${fmt(c.raw)} across ${totalDrives} drives.`;
+    $('eff').textContent=(c.eff*100).toFixed(0)+'%';
+    $('ft').textContent=c.tol===0?'none':`${c.tol}/group`+(g>1?` (best ${c.tol*g})`:'');
+    $('risk').innerHTML=c.p===null?'n/a':riskCell(c.p,c.covered).replace(/<\/?span[^>]*>/g,'');
+    const dPct=c.eff*100;
+    $('shelf').innerHTML=`<div class="seg-d" style="width:${dPct}%"></div><div class="seg-p" style="width:${100-dPct}%"></div>`;
+    $('lgD').textContent=fmt(c.usable);
+    $('lgP').textContent=fmt(c.raw-c.usable);
+    // comparison table
+    let rows='';
+    for(const k of Object.keys(LV)){
+      const minWk={r0:2,r1:2,r5:3,r6:4,z3:5}[k];
+      if(w<minWk)continue;
+      const x=compute(k,w,g,s,ure);
+      rows+=`<tr class="${k===level?'cur':''}"><td>${x.name}</td><td><b>${fmt(x.usable)}</b></td><td>${(x.eff*100).toFixed(0)}%</td><td>${x.tol===0?'0':x.tol+'/group'}</td><td>${riskCell(x.p,x.covered)}</td></tr>`;
+    }
+    $('cmp').innerHTML=rows;
+    summary=`${totalDrives}×${s}TB as ${c.name}${g>1?` (${g} groups of ${w})`:''}: ${fmt(c.usable)} usable (${(c.eff*100).toFixed(0)}% eff), tolerance ${c.tol}/group, rebuild URE risk ${c.p===null?'n/a':(c.p*100).toFixed(1)+'%'} [terabyte.tools]`;
+  }
+
+  $('copy').addEventListener('click',()=>{navigator.clipboard.writeText(summary).then(()=>{const c=$('copied');c.style.opacity=1;setTimeout(()=>c.style.opacity=0,1800);});});
+  $('share').addEventListener('click',()=>{
+    const q=new URLSearchParams({dsize:$('dsize').value,width:$('width').value,groups:$('groups').value,level:$('level').value,ure:$('ure').value});
+    navigator.clipboard.writeText(location.origin+location.pathname+'?'+q.toString()).then(()=>{const c=$('copied');c.style.opacity=1;setTimeout(()=>c.style.opacity=0,1800);});
+    history.replaceState(null,'','?'+q.toString());
+  });
+
+  const q=new URLSearchParams(location.search);
+  ['dsize','width','groups','level','ure'].forEach(f=>{if(q.has(f))$(f).value=q.get(f);});
+  $('form').addEventListener('input',calc);
+  $('form').addEventListener('change',calc);
+  calc();
+})();
+</script>
+</body>
+</html>

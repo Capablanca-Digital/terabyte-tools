@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kubernetes Cluster Sizing Calculator, nodes needed for your workloads, terabyte.tools</title>
+<meta name="description" content="Free Kubernetes sizing calculator: how many nodes your cluster needs from pod count, CPU and memory requests. Accounting for system reserves, pod-per-node limits and N+1 failover. Compare node shapes.">
+<link rel="canonical" href="https://terabyte.tools/kubernetes-sizing-calculator/">
+<meta property="og:title" content="Kubernetes Cluster Sizing Calculator">
+<meta property="og:description" content="Nodes needed from pods, requests and reserves. With N+1 and node-shape comparison.">
+<meta property="og:url" content="https://terabyte.tools/kubernetes-sizing-calculator/">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://terabyte.tools/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#10161D; --panel:#18212B; --panel2:#1F2A36; --line:#2C3947;
+  --text:#DCE4EE; --muted:#8A99AB; --amber:#FFB454; --green:#59D68C; --blue:#7FB3E3; --red:#E06C6C;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Inter',system-ui,sans-serif;
+  --disp:'Space Grotesk',var(--sans);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--blue)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand b{font-family:var(--disp);font-weight:700;font-size:17px}
+.brand b span{color:var(--amber)}
+.nav a.all{font-family:var(--mono);font-size:12px;color:var(--muted);text-decoration:none}
+.nav a.all:hover{color:var(--amber)}
+.hero{padding:38px 0 8px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+h1{font-family:var(--disp);font-weight:700;font-size:clamp(26px,4vw,40px);line-height:1.12;margin:10px 0 12px;max-width:760px}
+.lede{color:var(--muted);max-width:680px}
+.grid{display:grid;grid-template-columns:360px 1fr;gap:22px;padding:28px 0 10px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.panel h2{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:14px 18px;border-bottom:1px solid var(--line)}
+.panel .body{padding:18px}
+fieldset{border:0;margin:0 0 18px}
+legend{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+.row{display:grid;grid-template-columns:1fr 118px;align-items:center;gap:10px;margin-bottom:10px}
+.row label{font-size:13.5px}
+.row small{display:block;color:var(--muted);font-size:12px}
+input[type=number],select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:14px;padding:8px 10px}
+input:focus,select:focus,button:focus,a:focus{outline:2px solid var(--amber);outline-offset:1px}
+.unit{position:relative}
+.unit i{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-style:normal;font-family:var(--mono);font-size:11px;color:var(--muted);pointer-events:none}
+.unit input{padding-right:44px}
+.results{display:flex;flex-direction:column;gap:22px}
+.headline{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px;padding:18px}
+.big{font-family:var(--mono);font-weight:600;font-size:clamp(34px,5vw,52px);color:var(--amber);line-height:1}
+.headline p{color:var(--muted);font-size:13px;width:100%}
+.miles{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line)}
+@media(max-width:640px){.miles{grid-template-columns:1fr}}
+.mile{background:var(--panel);padding:14px 18px}
+.mile b{display:block;font-family:var(--mono);font-size:20px;font-weight:600}
+.mile span{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.mile b.bind{color:var(--amber)}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}
+th,td{text-align:right;padding:9px 18px;border-top:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500;border-top:0}
+tr.cur td{color:var(--amber)}
+td b{font-weight:600}
+.actions{display:flex;flex-wrap:wrap;gap:10px;padding:16px 18px;border-top:1px solid var(--line)}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:6px;padding:9px 16px;font-family:var(--mono);font-size:13px}
+button.primary{background:var(--amber);border-color:var(--amber);color:#1a1207;font-weight:600}
+button:hover{border-color:var(--amber)}
+#copied{color:var(--green);font-size:12.5px;align-self:center;opacity:0;transition:opacity .3s}
+.method{padding:34px 0 20px;max-width:760px}
+.method h2{font-family:var(--disp);font-size:22px;margin-bottom:10px}
+.method p{color:var(--muted);margin-bottom:12px}
+.method code{font-family:var(--mono);font-size:13px;color:var(--amber)}
+footer{border-top:1px solid var(--line);margin-top:30px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;padding:20px;color:var(--muted);font-size:12.5px}
+footer .wrap span b{color:var(--text);font-family:var(--disp)}
+
+.row:has(select){grid-template-columns:1fr;gap:6px}
+.row:has(select) select{width:100%}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="/" aria-label="terabyte.tools home">
+      <svg width="26" height="26" viewBox="0 0 96 96" aria-hidden="true"><rect x="10" y="14" width="76" height="22" rx="7" fill="#FFB454"/><path d="M22 25h22" stroke="#10161D" stroke-width="5" stroke-linecap="round"/><circle cx="63" cy="25" r="4.5" fill="#10161D"/><circle cx="75" cy="25" r="4.5" fill="#10161D"/><rect x="34" y="44" width="28" height="16" rx="5" fill="#596B7E"/><path d="M41 52h14" stroke="#10161D" stroke-width="4" stroke-linecap="round"/><rect x="34" y="66" width="28" height="16" rx="5" fill="#596B7E"/><path d="M41 74h14" stroke="#10161D" stroke-width="4" stroke-linecap="round"/></svg>
+      <b>terabyte<span>.tools</span></b>
+    </a>
+    <a class="all" href="/">← all tools</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="eyebrow">Tool 05 · Kubernetes</span>
+    <h1>Kubernetes cluster sizing calculator</h1>
+    <p class="lede">How many worker nodes does your cluster actually need? Sized from pod requests, the resource kube-scheduler really allocates, with system reserves, the pods-per-node ceiling and failover capacity included, plus a comparison across common node shapes.</p>
+  </section>
+
+  <section class="grid">
+    <form class="panel" id="form" aria-label="Workload and node inputs">
+      <h2>Inputs</h2>
+      <div class="body">
+        <fieldset>
+          <legend>Workload</legend>
+          <div class="row"><label for="pods">Total pods<small>All replicas, steady state</small></label><input id="pods" type="number" min="1" step="10" value="200"></div>
+          <div class="row"><label for="cpu">Avg CPU request / pod</label><span class="unit"><input id="cpu" type="number" min="10" step="50" value="250"><i>m</i></span></div>
+          <div class="row"><label for="ram">Avg memory request / pod</label><span class="unit"><input id="ram" type="number" min="0.05" step="0.25" value="0.5"><i>GiB</i></span></div>
+        </fieldset>
+        <fieldset>
+          <legend>Nodes</legend>
+          <div class="row"><label for="nvcpu">vCPU per node</label><input id="nvcpu" type="number" min="1" step="2" value="8"></div>
+          <div class="row"><label for="nram">Memory per node</label><span class="unit"><input id="nram" type="number" min="1" step="8" value="32"><i>GiB</i></span></div>
+          <div class="row"><label for="res">System reserve<small>kubelet, OS, runtime, eviction</small></label><span class="unit"><input id="res" type="number" min="0" max="50" step="5" value="10"><i>%</i></span></div>
+          <div class="row"><label for="maxpods">Max pods per node</label><input id="maxpods" type="number" min="10" step="10" value="110"></div>
+          <div class="row"><label for="ha">Failover capacity</label>
+            <select id="ha"><option value="0">none</option><option value="1" selected>N+1</option><option value="2">N+2</option></select>
+          </div>
+        </fieldset>
+      </div>
+    </form>
+
+    <div class="results">
+      <div class="panel">
+        <h2>Cluster size</h2>
+        <div class="headline">
+          <span class="big" id="bigNum">—</span>
+          <span class="big" style="color:var(--muted);font-size:16px">nodes</span>
+          <p id="bigNote"></p>
+        </div>
+        <div class="miles">
+          <div class="mile"><span>By CPU</span><b id="nCpu">—</b></div>
+          <div class="mile"><span>By memory</span><b id="nRam">—</b></div>
+          <div class="mile"><span>By pod limit</span><b id="nPods">—</b></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Same workload on other node shapes</h2>
+        <table>
+          <thead><tr><th>Node shape</th><th>Nodes (incl. failover)</th><th>Cluster vCPU</th><th>Cluster RAM</th><th>CPU util</th><th>RAM util</th></tr></thead>
+          <tbody id="cmp"></tbody>
+        </table>
+        <div class="actions">
+          <button class="primary" id="copy" type="button">Copy summary</button>
+          <button id="share" type="button">Copy share link</button>
+          <span id="copied">Copied</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="method">
+    <h2>How it's calculated</h2>
+    <p>Sizing is driven by <strong>requests</strong>, not limits or actual usage. Requests are what the scheduler reserves, so they determine when a node is "full" regardless of real utilization. Each node's allocatable capacity is its raw vCPU and memory minus the system reserve, which covers kubelet, the container runtime, OS daemons and the eviction threshold; 10% is a reasonable default for mid-size nodes, more on small ones where the fixed costs weigh proportionally more.</p>
+    <p>Nodes needed is the worst of three constraints: <code>ceil(Σ CPU requests / allocatable CPU)</code>, <code>ceil(Σ memory requests / allocatable memory)</code>, and <code>ceil(pods / max pods per node)</code>. The kubelet default cap is 110, and CNI or cloud-provider limits can be lower. Failover adds N+1 or N+2 spare nodes so a node failure or a rolling drain doesn't leave pods unschedulable; without it, a cluster sized exactly to fit has nowhere to reschedule.</p>
+    <p>What the model deliberately leaves out: DaemonSets (add their per-node requests to the reserve if they're heavy), significant request/usage gaps (if your requests are inflated, right-size them before buying nodes. That's the cheapest capacity you'll ever get), and burst headroom for HPA scale-ups, which you can approximate by sizing for peak replica counts. Fewer, larger nodes waste less on per-node overhead; more, smaller nodes reduce blast radius. The comparison table shows that trade-off with your own workload.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><b>terabyte.tools</b>. Calculators for people who run infrastructure</span>
+    <span>Runs entirely in your browser · No data leaves this page</span>
+    <span><a href="/privacy/">Privacy</a> · <a href="/cookies/">Cookies</a> · <a href="/terms/">Terms</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const SHAPES=[[4,16],[8,32],[16,64],[32,128],[64,256]];
+  function sizeFor(nv,nr,p){
+    const allocC=nv*1000*(1-p.res), allocR=nr*(1-p.res);
+    const byC=Math.ceil(p.pods*p.cpu/allocC);
+    const byR=Math.ceil(p.pods*p.ram/allocR);
+    const byP=Math.ceil(p.pods/p.maxpods);
+    const base=Math.max(byC,byR,byP,1);
+    return{byC,byR,byP,base,total:base+p.ha,
+      cpuUtil:p.pods*p.cpu/(base*allocC),ramUtil:p.pods*p.ram/(base*allocR)};
+  }
+  let summary='';
+  function calc(){
+    const p={
+      pods:Math.max(1,parseFloat($('pods').value)||1),
+      cpu:Math.max(10,parseFloat($('cpu').value)||10),
+      ram:Math.max(0.05,parseFloat($('ram').value)||0.05),
+      res:Math.min(50,Math.max(0,parseFloat($('res').value)||0))/100,
+      maxpods:Math.max(10,parseFloat($('maxpods').value)||110),
+      ha:parseInt($('ha').value)
+    };
+    const nv=Math.max(1,parseFloat($('nvcpu').value)||1);
+    const nr=Math.max(1,parseFloat($('nram').value)||1);
+    const s=sizeFor(nv,nr,p);
+    $('bigNum').textContent=s.total;
+    const bind=s.byC>=s.byR&&s.byC>=s.byP?'CPU':(s.byR>=s.byP?'memory':'pod limit');
+    $('bigNote').textContent=`${s.base} for the workload + ${p.ha} failover. Binding constraint: ${bind}. Requests: ${(p.pods*p.cpu/1000).toFixed(1)} vCPU, ${(p.pods*p.ram).toFixed(0)} GiB across ${p.pods} pods.`;
+    $('nCpu').textContent=s.byC; $('nRam').textContent=s.byR; $('nPods').textContent=s.byP;
+    $('nCpu').className=bind==='CPU'?'bind':''; $('nRam').className=bind==='memory'?'bind':''; $('nPods').className=bind==='pod limit'?'bind':'';
+    let rows='';
+    for(const[v,r]of SHAPES){
+      const x=sizeFor(v,r,p);
+      const cur=v===nv&&r===nr;
+      rows+=`<tr class="${cur?'cur':''}"><td>${v} vCPU / ${r} GiB</td><td><b>${x.total}</b></td><td>${x.total*v}</td><td>${x.total*r} GiB</td><td>${(x.cpuUtil*100).toFixed(0)}%</td><td>${(x.ramUtil*100).toFixed(0)}%</td></tr>`;
+    }
+    $('cmp').innerHTML=rows;
+    summary=`${p.pods} pods (${p.cpu}m / ${p.ram} GiB avg requests) on ${nv} vCPU/${nr} GiB nodes, ${(p.res*100).toFixed(0)}% reserve: ${s.total} nodes (${s.base}+${p.ha} failover, bound by ${bind}) [terabyte.tools]`;
+  }
+  $('copy').addEventListener('click',()=>{navigator.clipboard.writeText(summary).then(()=>{const c=$('copied');c.style.opacity=1;setTimeout(()=>c.style.opacity=0,1800);});});
+  $('share').addEventListener('click',()=>{
+    const q=new URLSearchParams({pods:$('pods').value,cpu:$('cpu').value,ram:$('ram').value,nvcpu:$('nvcpu').value,nram:$('nram').value,res:$('res').value,maxpods:$('maxpods').value,ha:$('ha').value});
+    navigator.clipboard.writeText(location.origin+location.pathname+'?'+q.toString()).then(()=>{const c=$('copied');c.style.opacity=1;setTimeout(()=>c.style.opacity=0,1800);});
+    history.replaceState(null,'','?'+q.toString());
+  });
+  const q=new URLSearchParams(location.search);
+  ['pods','cpu','ram','nvcpu','nram','res','maxpods','ha'].forEach(f=>{if(q.has(f))$(f).value=q.get(f);});
+  $('form').addEventListener('input',calc);
+  $('form').addEventListener('change',calc);
+  calc();
+})();
+</script>
+</body>
+</html>
