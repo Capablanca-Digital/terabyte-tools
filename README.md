@@ -18,7 +18,7 @@ Built by a working backup and infrastructure engineer who got tired of two thing
 
 ## Principles
 
-- **Everything runs in your browser.** No accounts, no tracking, no cookies of our own. The numbers you type never leave your machine.
+- **Everything runs in your browser.** No accounts, no ads, no cookies. Aggregate usage stats via self-hosted cookie-free analytics. The numbers you type never leave your machine.
 - **Every result is a shareable URL.** Drop an exact scenario into a ticket, a design doc or a forum answer.
 - **The models are honest about their limits.** Each page has a "How it's calculated" section that documents the formula and, just as important, what it deliberately ignores.
 - **No build step.** Plain HTML and vanilla JavaScript. View source and you see everything.
