@@ -125,6 +125,10 @@ footer .wrap span b{color:var(--text);font-family:var(--disp)}
           <div class="row"><label for="rram">Per GiB RAM</label><span class="unit"><input id="rram" type="number" min="0" step="0.5" value="3"><i>€/mo</i></span></div>
           <div class="row"><label for="rsto">Block storage per TB</label><span class="unit"><input id="rsto" type="number" min="0" step="5" value="80"><i>€/mo</i></span></div>
           <div class="row"><label for="regr">Egress per TB</label><span class="unit"><input id="regr" type="number" min="0" step="5" value="80"><i>€</i></span></div>
+          <div class="row"><label for="rlic">Licenses<small>OS, database, software subscriptions</small></label><span class="unit"><input id="rlic" type="number" min="0" step="50" value="0"><i>€/mo</i></span></div>
+          <div class="row"><label for="rdb">Managed databases</label><span class="unit"><input id="rdb" type="number" min="0" step="50" value="0"><i>€/mo</i></span></div>
+          <div class="row"><label for="rbak">Backup and DR</label><span class="unit"><input id="rbak" type="number" min="0" step="50" value="0"><i>€/mo</i></span></div>
+          <div class="row"><label for="rmgmt">Management and config<small>Managed services, platform fees, ops time</small></label><span class="unit"><input id="rmgmt" type="number" min="0" step="50" value="0"><i>€/mo</i></span></div>
         </fieldset>
         <fieldset>
           <legend>On-premise</legend>
@@ -135,6 +139,10 @@ footer .wrap span b{color:var(--text);font-family:var(--disp)}
           <div class="row"><label for="kwh">Electricity<small>Incl. cooling overhead (PUE)</small></label><span class="unit"><input id="kwh" type="number" min="0" step="0.05" value="0.30"><i>€/kWh</i></span></div>
           <div class="row"><label for="colo">Colo / rack per server</label><span class="unit"><input id="colo" type="number" min="0" step="25" value="120"><i>€/mo</i></span></div>
           <div class="row"><label for="maint">Support &amp; admin<small>% of capex per year: contracts, spares, time</small></label><span class="unit"><input id="maint" type="number" min="0" max="100" step="5" value="15"><i>%/yr</i></span></div>
+          <div class="row"><label for="olic">Licenses<small>Hypervisor, OS, database, software</small></label><span class="unit"><input id="olic" type="number" min="0" step="50" value="0"><i>€/mo</i></span></div>
+          <div class="row"><label for="odb">Databases<small>DBA effort, replication infra</small></label><span class="unit"><input id="odb" type="number" min="0" step="50" value="0"><i>€/mo</i></span></div>
+          <div class="row"><label for="obak">Backup and DR<small>Backup infra, offsite copies, tapes</small></label><span class="unit"><input id="obak" type="number" min="0" step="50" value="0"><i>€/mo</i></span></div>
+          <div class="row"><label for="omgmt">Management and config<small>Monitoring, patching, config management time</small></label><span class="unit"><input id="omgmt" type="number" min="0" step="50" value="0"><i>€/mo</i></span></div>
         </fieldset>
       </div>
     </form>
@@ -173,6 +181,7 @@ footer .wrap span b{color:var(--text);font-family:var(--disp)}
   <section class="method">
     <h2>How it's calculated. And what it leaves out</h2>
     <p>Cloud monthly cost is <code>vCPU·rate + RAM·rate + storage·rate + egress·rate</code>, which approximates on-demand instance pricing decomposed into its drivers. On-prem monthly cost is amortized capex (<code>servers × cost / years</code>) plus power at the wall (<code>W × 24 × 365 / 12 × €/kWh</code>. Set your rate to include cooling if you pay it), colocation or rack space, and a support-and-admin percentage that covers vendor contracts, spares and the fraction of a salary that actually runs the thing. That last slider is where most comparisons cheat, in either direction: 0% means your time is free, 40% means you're a bank.</p>
+    <p>The licenses and services lines exist because compute is rarely where TCO battles are won. Enter monthly figures from your actual quotes on each side: software licenses (a hypervisor or database licensed per core can flip the whole comparison), managed database services against DBA time, backup and DR, and management effort, from configuration and patching to platform or as-a-service fees. They default to zero so the comparison stays clean when they do not apply.</p>
     <p>What this deliberately leaves out, on both sides: cloud committed-use and reserved discounts (often 30–60% off. If you'd commit, cut the rates accordingly), spot capacity, licensing deltas (some database licenses price per cloud vCPU brutally), the value of elasticity for spiky workloads (this model assumes steady state, which is exactly where on-prem shines), migration costs, and the opportunity cost of capex. If your workload is spiky or you'd run at 20% utilization on-prem, cloud wins arguments this calculator won't show.</p>
     <p>The honest use of this tool: get a real cloud quote and a real hardware quote, put both in, and let the 5-year line settle the meeting. Steady-state infrastructure at decent utilization usually favors on-prem on raw cost. The question is whether the operational load and inflexibility are worth the difference, and that part is your call, not arithmetic.</p>
   </section>
@@ -189,9 +198,9 @@ footer .wrap span b{color:var(--text);font-family:var(--disp)}
 <script>
 (function(){
   const $=id=>document.getElementById(id);
-  const F=['wcpu','wram','wsto','wegr','rcpu','rram','rsto','regr','srv','capex','amort','watts','kwh','colo','maint'];
+  const F=['wcpu','wram','wsto','wegr','rcpu','rram','rsto','regr','rlic','rdb','rbak','rmgmt','srv','capex','amort','watts','kwh','colo','maint','olic','odb','obak','omgmt'];
   const eur=v=>'€'+Math.round(v).toLocaleString('en-US');
-  const COLORS=['var(--amber)','#7FB3E3','#596B7E','#59D68C'];
+  const COLORS=['var(--amber)','#7FB3E3','#596B7E','#59D68C','#8A99AB'];
   function bars(el,lg,parts){
     const tot=parts.reduce((a,p)=>a+p[1],0)||1;
     el.innerHTML=parts.map((p,i)=>`<div style="width:${p[1]/tot*100}%;background:${COLORS[i]}" title="${p[0]}"></div>`).join('');
@@ -202,12 +211,14 @@ footer .wrap span b{color:var(--text);font-family:var(--disp)}
     const v={};F.forEach(f=>v[f]=Math.max(0,parseFloat($(f).value)||0));
     v.amort=Math.max(1,v.amort);v.srv=Math.max(1,v.srv);
     const cCpu=v.wcpu*v.rcpu, cRam=v.wram*v.rram, cSto=v.wsto*v.rsto, cEgr=v.wegr*v.regr;
-    const cloud=cCpu+cRam+cSto+cEgr;
+    const cSvc=v.rlic+v.rdb+v.rbak+v.rmgmt;
+    const cloud=cCpu+cRam+cSto+cEgr+cSvc;
     const oAmort=v.srv*v.capex/v.amort/12;
     const oPower=v.srv*v.watts*24*365/12/1000*v.kwh;
     const oColo=v.srv*v.colo;
     const oMaint=v.srv*v.capex*(v.maint/100)/12;
-    const onp=oAmort+oPower+oColo+oMaint;
+    const oSvc=v.olic+v.odb+v.obak+v.omgmt;
+    const onp=oAmort+oPower+oColo+oMaint+oSvc;
     $('mCloud').textContent=eur(cloud);$('mOnp').textContent=eur(onp);
     const cw=cloud<=onp;
     $('mCloud').className='num '+(cw?'win':'lose');
@@ -216,8 +227,12 @@ footer .wrap span b{color:var(--text);font-family:var(--disp)}
     $('mOnpD').textContent=`${v.srv} servers · ${v.amort}-yr amortization`;
     const ratio=cw?onp/cloud:cloud/onp;
     $('verdict').textContent=`${cw?'Cloud':'On-premise'} is ${ratio.toFixed(1)}× cheaper per month at these rates`;
-    bars($('barC'),$('lgC'),[['Compute',cCpu+cRam],['Storage',cSto],['Egress',cEgr]]);
-    bars($('barO'),$('lgO'),[['Hardware',oAmort],['Power',oPower],['Colo',oColo],['Support',oMaint]]);
+    const cParts=[['Compute',cCpu+cRam],['Storage',cSto],['Egress',cEgr]];
+    if(cSvc>0)cParts.push(['Licenses & services',cSvc]);
+    bars($('barC'),$('lgC'),cParts);
+    const oParts=[['Hardware',oAmort],['Power',oPower],['Colo',oColo],['Support',oMaint]];
+    if(oSvc>0)oParts.push(['Licenses & services',oSvc]);
+    bars($('barO'),$('lgO'),oParts);
     let rows='';
     [12,36,60].forEach(m=>{
       const c=cloud*m,o=onp*m,d=c-o;

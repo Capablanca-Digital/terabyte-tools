@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ceph Capacity Calculator — replication, erasure coding &amp; usable space — terabyte.tools</title>
+<meta name="description" content="Free Ceph capacity calculator: usable space for replication and erasure coding (k+m), full ratio, self-heal headroom and failure tolerance. Compare protection schemes on your OSD topology.">
+<link rel="canonical" href="https://terabyte.tools/ceph-calculator/">
+<meta property="og:title" content="Ceph Capacity Calculator">
+<meta property="og:description" content="Usable capacity for replication and EC pools, with full ratio and self-heal headroom. What the cluster can really store.">
+<meta property="og:url" content="https://terabyte.tools/ceph-calculator/">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://terabyte.tools/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script defer src="https://umami.justforfans.app/script.js" data-website-id="c3bcf415-2096-41b6-8b17-65cdd8ff27a0"></script>
+<style>
+:root{
+  --bg:#10161D; --panel:#18212B; --panel2:#1F2A36; --line:#2C3947;
+  --text:#DCE4EE; --muted:#8A99AB; --amber:#FFB454; --green:#59D68C; --blue:#7FB3E3; --red:#E06C6C;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Inter',system-ui,sans-serif;
+  --disp:'Space Grotesk',var(--sans);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--blue)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand b{font-family:var(--disp);font-weight:700;font-size:17px}
+.brand b span{color:var(--amber)}
+.nav a.all{font-family:var(--mono);font-size:12px;color:var(--muted);text-decoration:none}
+.nav a.all:hover{color:var(--amber)}
+.hero{padding:38px 0 8px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+h1{font-family:var(--disp);font-weight:700;font-size:clamp(26px,4vw,40px);line-height:1.12;margin:10px 0 12px;max-width:760px}
+.lede{color:var(--muted);max-width:680px}
+.grid{display:grid;grid-template-columns:360px 1fr;gap:22px;padding:28px 0 10px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.panel h2{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:14px 18px;border-bottom:1px solid var(--line)}
+.panel .body{padding:18px}
+fieldset{border:0;margin:0 0 18px}
+legend{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+.row{display:grid;grid-template-columns:1fr 118px;align-items:center;gap:10px;margin-bottom:10px}
+.row label{font-size:13.5px}
+.row small{display:block;color:var(--muted);font-size:12px}
+input[type=number],select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:14px;padding:8px 10px}
+input:focus,select:focus,button:focus,a:focus{outline:2px solid var(--amber);outline-offset:1px}
+.row:has(select){grid-template-columns:1fr;gap:6px}
+.row:has(select) select{width:100%}
+.unit{position:relative}
+.unit i{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-style:normal;font-family:var(--mono);font-size:11px;color:var(--muted);pointer-events:none}
+.unit input{padding-right:44px}
+.switch{display:flex;align-items:center;gap:10px;font-size:13.5px;margin-top:4px}
+.switch input{width:16px;height:16px;accent-color:var(--amber)}
+.hint{font-size:12.5px;color:var(--muted)}
+.hint.warn{color:var(--red)}
+.results{display:flex;flex-direction:column;gap:22px}
+.headline{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px;padding:18px}
+.big{font-family:var(--mono);font-weight:600;font-size:clamp(34px,5vw,52px);color:var(--amber);line-height:1}
+.headline p{color:var(--muted);font-size:13px;width:100%}
+.miles{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line)}
+@media(max-width:640px){.miles{grid-template-columns:1fr}}
+.mile{background:var(--panel);padding:14px 18px}
+.mile b{display:block;font-family:var(--mono);font-size:20px;font-weight:600}
+.mile span{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.shelf{display:flex;height:34px;border-radius:6px;overflow:hidden;border:1px solid var(--line);margin:6px 0 10px}
+.seg-u{background:var(--amber)} .seg-p{background:#596B7E} .seg-r{background:repeating-linear-gradient(45deg,#3a4656,#3a4656 6px,#2C3947 6px,#2C3947 12px)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}
+th,td{text-align:right;padding:9px 18px;border-top:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500;border-top:0}
+tr.cur td{color:var(--amber)}
+td b{font-weight:600}
+td.no{color:var(--red)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;padding:16px 18px;border-top:1px solid var(--line)}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:6px;padding:9px 16px;font-family:var(--mono);font-size:13px}
+button.primary{background:var(--amber);border-color:var(--amber);color:#1a1207;font-weight:600}
+button:hover{border-color:var(--amber)}
+#copied{color:var(--green);font-size:12.5px;align-self:center;opacity:0;transition:opacity .3s}
+.method{padding:34px 0 20px;max-width:760px}
+.method h2{font-family:var(--disp);font-size:22px;margin-bottom:10px}
+.method p{color:var(--muted);margin-bottom:12px}
+.method code{font-family:var(--mono);font-size:13px;color:var(--amber)}
+footer{border-top:1px solid var(--line);margin-top:30px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;padding:20px;color:var(--muted);font-size:12.5px}
+footer .wrap span b{color:var(--text);font-family:var(--disp)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="/" aria-label="terabyte.tools home">
+      <svg width="26" height="26" viewBox="0 0 96 96" aria-hidden="true"><rect x="10" y="14" width="76" height="22" rx="7" fill="#FFB454"/><path d="M22 25h22" stroke="#10161D" stroke-width="5" stroke-linecap="round"/><circle cx="63" cy="25" r="4.5" fill="#10161D"/><circle cx="75" cy="25" r="4.5" fill="#10161D"/><rect x="34" y="44" width="28" height="16" rx="5" fill="#596B7E"/><path d="M41 52h14" stroke="#10161D" stroke-width="4" stroke-linecap="round"/><rect x="34" y="66" width="28" height="16" rx="5" fill="#596B7E"/><path d="M41 74h14" stroke="#10161D" stroke-width="4" stroke-linecap="round"/></svg>
+      <b>terabyte<span>.tools</span></b>
+    </a>
+    <a class="all" href="/">← all tools</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="eyebrow">Tool 08 · Storage</span>
+    <h1>Ceph capacity calculator</h1>
+    <p class="lede">What can your Ceph cluster really store? Usable capacity for replicated and erasure-coded pools, minus the parts most calculators skip: the full ratio that stops writes long before disks are physically full, and the headroom the cluster needs to heal itself when a host dies.</p>
+  </section>
+
+  <section class="grid">
+    <form class="panel" id="form" aria-label="Cluster inputs">
+      <h2>Cluster</h2>
+      <div class="body">
+        <fieldset>
+          <legend>Topology</legend>
+          <div class="row"><label for="nodes">OSD hosts</label><input id="nodes" type="number" min="1" step="1" value="5"></div>
+          <div class="row"><label for="osds">OSDs per host</label><input id="osds" type="number" min="1" step="1" value="8"></div>
+          <div class="row"><label for="osize">OSD size</label><span class="unit"><input id="osize" type="number" min="0.1" step="1" value="8"><i>TB</i></span></div>
+        </fieldset>
+        <fieldset>
+          <legend>Data protection</legend>
+          <div class="row"><label for="scheme">Pool scheme<small>Failure domain: host</small></label>
+            <select id="scheme">
+              <option value="r3" selected>Replication 3x (default)</option>
+              <option value="r2">Replication 2x</option>
+              <option value="e21">EC 2+1</option>
+              <option value="e42">EC 4+2</option>
+              <option value="e43">EC 4+3</option>
+              <option value="e62">EC 6+2</option>
+              <option value="e63">EC 6+3</option>
+              <option value="e82">EC 8+2</option>
+              <option value="e83">EC 8+3</option>
+            </select>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Operational margins</legend>
+          <div class="row"><label for="full">Full ratio<small>Writes stop here; default 0.85 nearfull warning</small></label><span class="unit"><input id="full" type="number" min="0.5" max="0.95" step="0.05" value="0.85"><i>ratio</i></span></div>
+          <label class="switch"><input id="heal" type="checkbox" checked> Reserve self-heal headroom (survive and rebalance one host)</label>
+        </fieldset>
+        <p class="hint warn" id="warnHint" hidden></p>
+      </div>
+    </form>
+
+    <div class="results">
+      <div class="panel">
+        <h2>Usable capacity</h2>
+        <div class="headline">
+          <span class="big" id="bigNum">—</span>
+          <p id="bigNote"></p>
+        </div>
+        <div class="miles">
+          <div class="mile"><span>Efficiency</span><b id="eff">—</b></div>
+          <div class="mile"><span>Host failures tolerated</span><b id="tol">—</b></div>
+          <div class="mile"><span>Raw capacity</span><b id="raw">—</b></div>
+        </div>
+        <div class="body">
+          <div class="shelf" id="shelf" role="img" aria-label="Raw capacity split"></div>
+          <div class="legend">
+            <span><i class="seg-u"></i>Usable (<span id="lgU">—</span>)</span>
+            <span><i class="seg-p"></i>Protection (<span id="lgP">—</span>)</span>
+            <span><i class="seg-r"></i>Reserved margins (<span id="lgR">—</span>)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>All schemes on this topology</h2>
+        <table>
+          <thead><tr><th>Scheme</th><th>Usable</th><th>Efficiency</th><th>Host failures</th><th>Min hosts</th></tr></thead>
+          <tbody id="cmp"></tbody>
+        </table>
+        <div class="actions">
+          <button class="primary" id="copy" type="button">Copy summary</button>
+          <button id="share" type="button">Copy share link</button>
+          <span id="copied">Copied</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="method">
+    <h2>How it's calculated</h2>
+    <p>Raw capacity is hosts × OSDs × OSD size, in decimal TB. Replication divides it by the replica count; erasure coding keeps <code>k/(k+m)</code> of it. With the default failure domain of host, each replica or EC chunk lands on a different host, so a scheme needs at least <code>size</code> (replication) or <code>k+m</code> (EC) hosts to place data at all, and it tolerates <code>size−1</code> or <code>m</code> simultaneous host failures.</p>
+    <p>Then come the margins that separate paper capacity from real capacity. Ceph raises <code>nearfull</code> warnings at 85% by default and stops writes at the <code>full</code> ratio, so plan against your chosen ratio, not 100%. The self-heal option answers a question every operator eventually faces at 3 a.m.: if a host dies, can the survivors absorb its data and return to full redundancy? Reserving that headroom multiplies capacity by <code>(hosts−1)/hosts</code>, and it also needs one host more than the scheme minimum to have somewhere to rebuild. Skip it only if you accept running degraded until hardware is replaced.</p>
+    <p>Deliberately out of scope: BlueStore metadata and DB/WAL overhead (a few percent), uneven OSD utilization that wastes space before the fullest OSD hits the ratio (the balancer helps), performance differences between replication and EC (EC saves space and costs IOPS and latency, especially on small writes), and CephFS or RGW overhead on top of RADOS. Wide EC profiles like 8+3 look great on efficiency and need eleven healthy hosts before they store a single object; most small clusters are happier with 3x replication or 4+2 than the spreadsheet suggests.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><b>terabyte.tools</b> — calculators for people who run infrastructure</span>
+    <span>Runs in your browser · Calculator inputs never leave your machine</span>
+    <span><a href="/privacy/">Privacy</a> · <a href="/cookies/">Cookies</a> · <a href="/terms/">Terms</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const SCHEMES={
+    r3:{name:'Replication 3x',f:1/3,min:3,tol:2},
+    r2:{name:'Replication 2x',f:1/2,min:2,tol:1},
+    e21:{name:'EC 2+1',f:2/3,min:3,tol:1},
+    e42:{name:'EC 4+2',f:4/6,min:6,tol:2},
+    e43:{name:'EC 4+3',f:4/7,min:7,tol:3},
+    e62:{name:'EC 6+2',f:6/8,min:8,tol:2},
+    e63:{name:'EC 6+3',f:6/9,min:9,tol:3},
+    e82:{name:'EC 8+2',f:8/10,min:10,tol:2},
+    e83:{name:'EC 8+3',f:8/11,min:11,tol:3}
+  };
+  const fmt=tb=>!isFinite(tb)?'—':tb>=1000?(tb/1000).toFixed(2)+' PB':tb.toFixed(tb>=100?0:1)+' TB';
+
+  function usableFor(key,nodes,raw,full,heal){
+    const s=SCHEMES[key];
+    const minHosts=s.min+(heal?1:0);
+    if(nodes<minHosts)return{ok:false,minHosts,s};
+    let u=raw*s.f*full;
+    if(heal)u*=(nodes-1)/nodes;
+    return{ok:true,u,minHosts,s};
+  }
+
+  let summary='';
+  function calc(){
+    const nodes=Math.max(1,Math.round(parseFloat($('nodes').value)||1));
+    const osds=Math.max(1,Math.round(parseFloat($('osds').value)||1));
+    const osize=Math.max(0.1,parseFloat($('osize').value)||0.1);
+    const full=Math.min(0.95,Math.max(0.5,parseFloat($('full').value)||0.85));
+    const heal=$('heal').checked;
+    const key=$('scheme').value;
+    const raw=nodes*osds*osize;
+    const r=usableFor(key,nodes,raw,full,heal);
+    $('raw').textContent=fmt(raw);
+    if(!r.ok){
+      $('warnHint').hidden=false;
+      $('warnHint').textContent=`${r.s.name} needs at least ${r.minHosts} hosts on this configuration (${r.s.min} for placement${heal?' + 1 to rebuild into':''}). You have ${nodes}.`;
+      $('bigNum').textContent='n/a';
+      $('bigNote').textContent='Add hosts or pick a narrower scheme.';
+      $('eff').textContent='—';$('tol').textContent='—';
+      $('shelf').innerHTML='';$('lgU').textContent='—';$('lgP').textContent='—';$('lgR').textContent='—';
+    }else{
+      $('warnHint').hidden=true;
+      const u=r.u;
+      const prot=raw*(1-r.s.f);
+      const reserved=raw-u-prot;
+      $('bigNum').textContent=fmt(u);
+      $('bigNote').textContent=`${r.s.name} on ${nodes} hosts × ${osds} × ${osize} TB, full ratio ${full}${heal?', self-heal headroom reserved':''}. This is the data you can actually write.`;
+      $('eff').textContent=(u/raw*100).toFixed(0)+'%';
+      $('tol').textContent=r.s.tol+(heal?' + heals':'');
+      $('shelf').innerHTML=
+        `<div class="seg-u" style="width:${u/raw*100}%"></div>`+
+        `<div class="seg-p" style="width:${prot/raw*100}%"></div>`+
+        `<div class="seg-r" style="width:${reserved/raw*100}%"></div>`;
+      $('lgU').textContent=fmt(u);$('lgP').textContent=fmt(prot);$('lgR').textContent=fmt(reserved);
+      summary=`Ceph ${nodes} hosts × ${osds} × ${osize} TB (${fmt(raw)} raw), ${r.s.name}, full ${full}${heal?', self-heal reserved':''}: ${fmt(u)} usable (${(u/raw*100).toFixed(0)}%), tolerates ${r.s.tol} host failure(s) [terabyte.tools]`;
+    }
+    let rows='';
+    for(const k of Object.keys(SCHEMES)){
+      const x=usableFor(k,nodes,raw,full,heal);
+      if(x.ok){
+        rows+=`<tr class="${k===key?'cur':''}"><td>${x.s.name}</td><td><b>${fmt(x.u)}</b></td><td>${(x.u/raw*100).toFixed(0)}%</td><td>${x.s.tol}</td><td>${x.minHosts}</td></tr>`;
+      }else{
+        rows+=`<tr class="${k===key?'cur':''}"><td>${x.s.name}</td><td class="no">needs ${x.minHosts} hosts</td><td>—</td><td>${x.s.tol}</td><td>${x.minHosts}</td></tr>`;
+      }
+    }
+    $('cmp').innerHTML=rows;
+  }
+
+  $('copy').addEventListener('click',()=>{navigator.clipboard.writeText(summary).then(()=>{const c=$('copied');c.style.opacity=1;setTimeout(()=>c.style.opacity=0,1800);});});
+  $('share').addEventListener('click',()=>{
+    const q=new URLSearchParams({nodes:$('nodes').value,osds:$('osds').value,osize:$('osize').value,scheme:$('scheme').value,full:$('full').value,heal:$('heal').checked?'1':'0'});
+    navigator.clipboard.writeText(location.origin+location.pathname+'?'+q.toString()).then(()=>{const c=$('copied');c.style.opacity=1;setTimeout(()=>c.style.opacity=0,1800);});
+    history.replaceState(null,'','?'+q.toString());
+  });
+  const q=new URLSearchParams(location.search);
+  ['nodes','osds','osize','scheme','full'].forEach(f=>{if(q.has(f))$(f).value=q.get(f);});
+  if(q.get('heal')==='0')$('heal').checked=false;
+  $('form').addEventListener('input',calc);
+  $('form').addEventListener('change',calc);
+  calc();
+})();
+</script>
+</body>
+</html>
