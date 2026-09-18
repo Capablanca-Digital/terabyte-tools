@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cost of Downtime Calculator — what an outage really costs per hour — terabyte.tools</title>
+<meta name="description" content="Free downtime cost calculator: cost per hour of an outage from revenue and productivity loss, and what each availability tier (99% to 99.999%) costs you per year. Build the business case with real numbers.">
+<link rel="canonical" href="https://terabyte.tools/downtime-cost-calculator/">
+<meta property="og:title" content="Cost of Downtime Calculator">
+<meta property="og:description" content="Cost per hour of an outage, and the yearly price of each availability tier from 99% to five nines.">
+<meta property="og:url" content="https://terabyte.tools/downtime-cost-calculator/">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://terabyte.tools/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script defer src="https://umami.justforfans.app/script.js" data-website-id="c3bcf415-2096-41b6-8b17-65cdd8ff27a0"></script>
+<style>
+:root{
+  --bg:#10161D; --panel:#18212B; --panel2:#1F2A36; --line:#2C3947;
+  --text:#DCE4EE; --muted:#8A99AB; --amber:#FFB454; --green:#59D68C; --blue:#7FB3E3; --red:#E06C6C;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Inter',system-ui,sans-serif;
+  --disp:'Space Grotesk',var(--sans);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--blue)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand b{font-family:var(--disp);font-weight:700;font-size:17px}
+.brand b span{color:var(--amber)}
+.nav a.all{font-family:var(--mono);font-size:12px;color:var(--muted);text-decoration:none}
+.nav a.all:hover{color:var(--amber)}
+.hero{padding:38px 0 8px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+h1{font-family:var(--disp);font-weight:700;font-size:clamp(26px,4vw,40px);line-height:1.12;margin:10px 0 12px;max-width:760px}
+.lede{color:var(--muted);max-width:680px}
+.grid{display:grid;grid-template-columns:380px 1fr;gap:22px;padding:28px 0 10px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.panel h2{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:14px 18px;border-bottom:1px solid var(--line)}
+.panel .body{padding:18px}
+fieldset{border:0;margin:0 0 18px}
+legend{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+.row{display:grid;grid-template-columns:1fr 130px;align-items:center;gap:10px;margin-bottom:10px}
+.row label{font-size:13.5px}
+.row small{display:block;color:var(--muted);font-size:12px}
+input[type=number],select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:14px;padding:8px 10px}
+input:focus,select:focus,button:focus,a:focus{outline:2px solid var(--amber);outline-offset:1px}
+.row:has(select){grid-template-columns:1fr;gap:6px}
+.row:has(select) select{width:100%}
+.unit{position:relative}
+.unit i{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-style:normal;font-family:var(--mono);font-size:11px;color:var(--muted);pointer-events:none}
+.unit input{padding-right:52px}
+.results{display:flex;flex-direction:column;gap:22px}
+.headline{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px;padding:18px}
+.big{font-family:var(--mono);font-weight:600;font-size:clamp(32px,4.5vw,48px);color:var(--amber);line-height:1}
+.big em{font-style:normal;font-size:.42em;color:var(--muted);font-weight:400}
+.headline p{color:var(--muted);font-size:13px;width:100%}
+.miles{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line)}
+@media(max-width:640px){.miles{grid-template-columns:1fr}}
+.mile{background:var(--panel);padding:14px 18px}
+.mile b{display:block;font-family:var(--mono);font-size:19px;font-weight:600}
+.mile span{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}
+th,td{text-align:right;padding:9px 18px;border-top:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500;border-top:0}
+tr.cur td{color:var(--amber)}
+td b{font-weight:600}
+.saving{font-family:var(--mono);font-size:13.5px;color:var(--green);padding:14px 18px;border-top:1px solid var(--line)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;padding:16px 18px;border-top:1px solid var(--line)}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:6px;padding:9px 16px;font-family:var(--mono);font-size:13px}
+button.primary{background:var(--amber);border-color:var(--amber);color:#1a1207;font-weight:600}
+button:hover{border-color:var(--amber)}
+#copied{color:var(--green);font-size:12.5px;align-self:center;opacity:0;transition:opacity .3s}
+.method{padding:34px 0 20px;max-width:760px}
+.method h2{font-family:var(--disp);font-size:22px;margin-bottom:10px}
+.method p{color:var(--muted);margin-bottom:12px}
+.method code{font-family:var(--mono);font-size:13px;color:var(--amber)}
+footer{border-top:1px solid var(--line);margin-top:30px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;padding:20px;color:var(--muted);font-size:12.5px}
+footer .wrap span b{color:var(--text);font-family:var(--disp)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="/" aria-label="terabyte.tools home">
+      <svg width="26" height="26" viewBox="0 0 96 96" aria-hidden="true"><rect x="10" y="14" width="76" height="22" rx="7" fill="#FFB454"/><path d="M22 25h22" stroke="#10161D" stroke-width="5" stroke-linecap="round"/><circle cx="63" cy="25" r="4.5" fill="#10161D"/><circle cx="75" cy="25" r="4.5" fill="#10161D"/><rect x="34" y="44" width="28" height="16" rx="5" fill="#596B7E"/><path d="M41 52h14" stroke="#10161D" stroke-width="4" stroke-linecap="round"/><rect x="34" y="66" width="28" height="16" rx="5" fill="#596B7E"/><path d="M41 74h14" stroke="#10161D" stroke-width="4" stroke-linecap="round"/></svg>
+      <b>terabyte<span>.tools</span></b>
+    </a>
+    <a class="all" href="/">← all tools</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="eyebrow">Tool 09 · Business Continuity</span>
+    <h1>Cost of downtime calculator</h1>
+    <p class="lede">What does one hour of outage actually cost your business? Revenue loss plus idle payroll, turned into the number that wins budget meetings, and a table showing what each availability tier from 99% to five nines costs you per year.</p>
+  </section>
+
+  <section class="grid">
+    <form class="panel" id="form" aria-label="Business inputs">
+      <h2>Inputs</h2>
+      <div class="body">
+        <fieldset>
+          <legend>Revenue at risk</legend>
+          <div class="row"><label for="rev">Annual revenue</label><span class="unit"><input id="rev" type="number" min="0" step="100000" value="5000000"><i>€/yr</i></span></div>
+          <div class="row"><label for="dep">Revenue dependent on the system<small>Share that stops when it is down</small></label><span class="unit"><input id="dep" type="number" min="0" max="100" step="5" value="60"><i>%</i></span></div>
+          <div class="row"><label for="hours">Operating model<small>Sets the hours revenue is earned in</small></label>
+            <select id="hours">
+              <option value="8760" selected>24 x 7 (8,760 h/yr)</option>
+              <option value="4368">12 x 7 (4,368 h/yr)</option>
+              <option value="2080">Business hours 8 x 5 (2,080 h/yr)</option>
+            </select>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>People idled</legend>
+          <div class="row"><label for="emp">Employees affected</label><input id="emp" type="number" min="0" step="5" value="40"></div>
+          <div class="row"><label for="wage">Loaded cost per employee<small>Salary plus overhead, per hour</small></label><span class="unit"><input id="wage" type="number" min="0" step="5" value="35"><i>€/h</i></span></div>
+          <div class="row"><label for="prod">Productivity lost during outage</label><span class="unit"><input id="prod" type="number" min="0" max="100" step="10" value="80"><i>%</i></span></div>
+        </fieldset>
+        <fieldset>
+          <legend>Your current availability</legend>
+          <div class="row"><label for="avail">Availability today<small>Measured or honest estimate</small></label>
+            <select id="avail">
+              <option value="0.99">99% (two nines)</option>
+              <option value="0.995">99.5%</option>
+              <option value="0.999" selected>99.9% (three nines)</option>
+              <option value="0.9995">99.95%</option>
+              <option value="0.9999">99.99% (four nines)</option>
+              <option value="0.99999">99.999% (five nines)</option>
+            </select>
+          </div>
+        </fieldset>
+      </div>
+    </form>
+
+    <div class="results">
+      <div class="panel">
+        <h2>Cost per hour of downtime</h2>
+        <div class="headline">
+          <span class="big" id="bigNum">—</span>
+          <span class="big" style="color:var(--muted);font-size:16px">per hour</span>
+          <p id="bigNote"></p>
+        </div>
+        <div class="miles">
+          <div class="mile"><span>Revenue loss / h</span><b id="revh">—</b></div>
+          <div class="mile"><span>Productivity loss / h</span><b id="prodh">—</b></div>
+          <div class="mile"><span>Expected yearly cost</span><b id="yearly">—</b></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>What each availability tier costs per year</h2>
+        <table>
+          <thead><tr><th>Availability</th><th>Downtime / year</th><th>Annual cost</th></tr></thead>
+          <tbody id="tiers"></tbody>
+        </table>
+        <p class="saving" id="saving"></p>
+        <div class="actions">
+          <button class="primary" id="copy" type="button">Copy summary</button>
+          <button id="share" type="button">Copy share link</button>
+          <span id="copied">Copied</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="method">
+    <h2>How it's calculated</h2>
+    <p>Hourly cost has two parts. Revenue loss is <code>annual revenue × dependent share / operating hours</code>: the money that simply does not come in while the system is down. Productivity loss is <code>employees × loaded hourly cost × productivity lost</code>: payroll you keep paying while people wait. The yearly figures multiply that hourly cost by the downtime each availability tier implies over your operating window: 99.9% of 8,760 hours means 8.8 hours down per year, 99% means 87.6 hours, and five nines means 5 minutes.</p>
+    <p>The savings line under the table is the argument this tool exists for: the yearly cost difference between your current tier and the next one is the budget ceiling for whatever gets you there, whether that is a second site, better backup infrastructure, redundant links or an on-call rotation. If the improvement costs less than that difference per year, the business case writes itself; if it costs more, now you know that too.</p>
+    <p>What the model deliberately leaves out, and why the real number is usually higher: reputational damage and customer churn, contractual SLA penalties, data loss (this prices unavailability, not lost transactions, which have their own and often larger cost), recovery labor and overtime, and the fact that outages do not respect averages. An hour down during your peak sales window costs a multiple of the average hour, so if your revenue is seasonal or spiky, run the numbers with peak-hour revenue too. Treat the output as the conservative floor of what downtime costs you.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><b>terabyte.tools</b> — calculators for people who run infrastructure</span>
+    <span>Runs in your browser · Calculator inputs never leave your machine</span>
+    <span><a href="/privacy/">Privacy</a> · <a href="/cookies/">Cookies</a> · <a href="/terms/">Terms</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const TIERS=[[0.99,'99%'],[0.995,'99.5%'],[0.999,'99.9%'],[0.9995,'99.95%'],[0.9999,'99.99%'],[0.99999,'99.999%']];
+  const eur=v=>'€'+Math.round(v).toLocaleString('en-US');
+  function fmtDur(h){
+    if(h>=48)return (h/24).toFixed(1)+' days';
+    if(h>=1)return h.toFixed(1)+' h';
+    return Math.round(h*60)+' min';
+  }
+  let summary='';
+  function calc(){
+    const rev=Math.max(0,parseFloat($('rev').value)||0);
+    const dep=Math.min(100,Math.max(0,parseFloat($('dep').value)||0))/100;
+    const H=parseFloat($('hours').value);
+    const emp=Math.max(0,parseFloat($('emp').value)||0);
+    const wage=Math.max(0,parseFloat($('wage').value)||0);
+    const prod=Math.min(100,Math.max(0,parseFloat($('prod').value)||0))/100;
+    const avail=parseFloat($('avail').value);
+    const revH=rev*dep/H;
+    const prodH=emp*wage*prod;
+    const hourly=revH+prodH;
+    const downH=H*(1-avail);
+    const yearly=downH*hourly;
+    $('bigNum').textContent=eur(hourly);
+    $('bigNote').textContent=`Every hour of outage burns ${eur(revH)} in revenue and ${eur(prodH)} in idle payroll, on a ${H===8760?'24x7':H===4368?'12x7':'business hours'} operation.`;
+    $('revh').textContent=eur(revH);
+    $('prodh').textContent=eur(prodH);
+    $('yearly').textContent=eur(yearly);
+    let rows='';let idx=TIERS.findIndex(t=>t[0]===avail);
+    TIERS.forEach(([a,label],i)=>{
+      const dh=H*(1-a);
+      rows+=`<tr class="${a===avail?'cur':''}"><td>${label}</td><td>${fmtDur(dh)}</td><td><b>${eur(dh*hourly)}</b></td></tr>`;
+    });
+    $('tiers').innerHTML=rows;
+    if(idx>=0&&idx<TIERS.length-1){
+      const next=TIERS[idx+1];
+      const save=yearly-H*(1-next[0])*hourly;
+      $('saving').textContent=`Moving from ${TIERS[idx][1]} to ${next[1]} is worth ${eur(save)} per year. That is your budget ceiling for the improvement.`;
+    }else{
+      $('saving').textContent='You are at the top tier of this table. The remaining exposure is '+eur(yearly)+' per year.';
+    }
+    summary=`Downtime costs ${eur(hourly)}/h (${eur(revH)} revenue + ${eur(prodH)} payroll). At ${TIERS[idx>=0?idx:2][1]} availability that is ${eur(yearly)}/yr expected. [terabyte.tools]`;
+  }
+  $('copy').addEventListener('click',()=>{navigator.clipboard.writeText(summary).then(()=>{const c=$('copied');c.style.opacity=1;setTimeout(()=>c.style.opacity=0,1800);});});
+  $('share').addEventListener('click',()=>{
+    const q=new URLSearchParams({rev:$('rev').value,dep:$('dep').value,hours:$('hours').value,emp:$('emp').value,wage:$('wage').value,prod:$('prod').value,avail:$('avail').value});
+    navigator.clipboard.writeText(location.origin+location.pathname+'?'+q.toString()).then(()=>{const c=$('copied');c.style.opacity=1;setTimeout(()=>c.style.opacity=0,1800);});
+    history.replaceState(null,'','?'+q.toString());
+  });
+  const q=new URLSearchParams(location.search);
+  ['rev','dep','hours','emp','wage','prod','avail'].forEach(f=>{if(q.has(f))$(f).value=q.get(f);});
+  $('form').addEventListener('input',calc);
+  $('form').addEventListener('change',calc);
+  calc();
+})();
+</script>
+</body>
+</html>
